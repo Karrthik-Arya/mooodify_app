@@ -1,16 +1,10 @@
-import pprint
-import sys
 import os
 import spotipy
 import spotipy.util as util
-import simplejson as json
 import string
 import random
 import requests
-import base64
 import datetime
-import spotipy.oauth2 as oauth2
-from spotipy.oauth2 import SpotifyOAuth
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
 import numpy as np
