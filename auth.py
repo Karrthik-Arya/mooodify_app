@@ -7,8 +7,6 @@ import requests
 import datetime
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
-import numpy as np
-import streamlit as st
 
 os.environ['SPOTIPY_CLIENT_ID']='f7a43754c96842d0abe4714b5d46b5b8'
 os.environ['SPOTIPY_CLIENT_SECRET']='b220dc8a84284d15960df4b2460255ee'

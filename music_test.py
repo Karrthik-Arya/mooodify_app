@@ -25,5 +25,7 @@ def recommend_music(hist, mood):
     for index in index_moods:
         moods.append(emotions[index])
     hist["moods"] = moods
-    return hist[hist["moods"] == mood].reset_index(drop =True)
+    df =  hist[hist["moods"] == mood].reset_index(drop =True)
+    df = df.drop_duplicates(subset=['ID'], keep='first')
+    return df
 

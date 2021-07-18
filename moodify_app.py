@@ -32,13 +32,12 @@ SIDEBAR_OPTION_MEET_TEAM = "Meet the Team"
 SIDEBAR_OPTIONS = [SIDEBAR_OPTION_PROJECT_INFO, SIDEBAR_OPTION_DEMO_IMAGE, SIDEBAR_OPTION_UPLOAD_IMAGE, SIDEBAR_OPTION_MEET_TEAM]
 #needs one arg as mood ,history should return csv format of history of songs including their stats ((csv format))
 def load_model(mood, token):
-    if token:
-        df  = auth.make_df(token)
-    else:
-        df = pd.read_csv("moods.csv")
+    df  = auth.make_df(token)
     final_play_lst=recommend(mood,df)
-    st.write(final_play_lst)
     ids = list(final_play_lst["ID"])
+    final_play_lst = final_play_lst[["Name", "Artist", "Album"]]
+    #final_play_lst = final_play_lst.style.set_properties(**{'text-align': 'left'})
+    st.write(final_play_lst)
     return ids
        
 
@@ -85,7 +84,6 @@ def load_and_preprocess_img(img_path, num_hg_blocks, bbox=None):
     return new_img
 
 def run_app(img, token):
-    
     left_column, right_column = st.beta_columns(2)
     xb = load_and_preprocess_img(img, num_hg_blocks=1)
     display_image = cv2.resize(xb, IMAGE_DISPLAY_SIZE,
@@ -94,21 +92,19 @@ def run_app(img, token):
     left_column.image(display_image, caption = "Selected Input")
     right_column.image(display_image, caption = "Predicted mood:" + str(mood_img) )
     ids = load_model(mood_img, token)
-    auth.create_playlist(token, ids)
-    st.write("playlist made")
+    return ids
      
 
 
 def main():
-    st.markdown("""<h3>Before proceeding, please go to <a href='https://developer.spotify.com/console/get-recently-played/'>this</a> website, click on get token and click on 'user-recently-played' and 'playlist-modify-private' to generate token. Paste the obtained OAuth Token here </h3>""", unsafe_allow_html=True)
-    token = st.text_input("Access token: ")
     st.sidebar.warning('\
         Please upload SINGLE-person images. For best results, please also CENTER the person in the image.')
     st.sidebar.write(" ------ ")
     st.sidebar.title("Explore the Following")
 
     app_mode = st.sidebar.selectbox("Please select from the following", SIDEBAR_OPTIONS)
-
+    st.markdown("""<p>Before proceeding, please go to <a href='https://developer.spotify.com/console/get-recently-played/'>this</a> website, click on get token and click on 'user-recently-played' and 'playlist-modify-private' to generate token. Paste the obtained OAuth Token here </p>""", unsafe_allow_html=True)
+    token = st.text_input("Access token: ")
     if app_mode == SIDEBAR_OPTION_PROJECT_INFO:
         st.sidebar.write(" ------ ")
         st.sidebar.success("Project information showing on the right!")
@@ -125,44 +121,64 @@ def main():
          📸 Feel free to upload any image you want to get a song prediction under **Upload an Image**
 
          📞 Our team members are here to answer questions. Please refer to **Contact Information** under **Meet the Team**.''')
+    
 
     elif app_mode == SIDEBAR_OPTION_DEMO_IMAGE:
-        st.sidebar.write(" ------ ")
+        if not token:
+            st.warning("Please enter access token")
+        else:
+            st.sidebar.write(" ------ ")
 
-        directory = os.path.join(IMAGE_DIR)
+            directory = os.path.join(IMAGE_DIR)
 
-        photos = []
-        for file in os.listdir(directory):
-            filepath = os.path.join(directory, file)
+            photos = []
+            for file in os.listdir(directory):
+                filepath = os.path.join(directory, file)
 
-            # Find all valid images
-            if imghdr.what(filepath) is not None:
-                photos.append(file)
+                # Find all valid images
+                if imghdr.what(filepath) is not None:
+                    photos.append(file)
 
-        photos.sort()
+            photos.sort()
 
-        option = st.sidebar.selectbox('Please select a sample image, then click the button', photos)
-        pressed = st.sidebar.button('Create playlist')
-        if pressed:
-            st.empty()
-            st.sidebar.write('Please wait for the playlist to be created! This may take up to a few minutes.')
+            option = st.sidebar.selectbox('Please select a sample image, then click the button', photos)
+            check = st.sidebar.checkbox("Add the playlist to my Spotify account")
+            pressed = st.sidebar.button('Create playlist')
+            
+            if pressed:
+                st.empty()
+                st.sidebar.write('Please wait for the playlist to be created! This may take up to a few minutes.')
 
-            pic = os.path.join(directory, option)
+                pic = os.path.join(directory, option)
 
-            run_app(pic, token)
+                ids = run_app(pic, token)
+                if check:
+                    st.empty()
+                    auth.create_playlist(token, ids)
+                    st.success("Playlist has been added to your Spotify account!")
+                
+
 
 
     elif app_mode == SIDEBAR_OPTION_UPLOAD_IMAGE:
-        #upload = st.empty()
-        #with upload:
-        st.sidebar.info('PRIVACY POLICY: Uploaded images are never saved or stored. They are held entirely within memory for prediction \
-            and discarded after the final results are displayed. ')
-        f = st.sidebar.file_uploader("Please Select to Upload an Image", type=['png', 'jpg', 'jpeg', 'tiff', 'gif', 'JPG'])
-        if f is not None:
-            tfile = tempfile.NamedTemporaryFile(delete=True)
-            tfile.write(f.read())
-            st.sidebar.write('Please wait for the playlist to be created! This may take up to a few minutes.')
-            run_app(tfile, token)
+        if not token:
+            st.warning("Please enter access token")
+        else:
+            #upload = st.empty()
+            #with upload:
+            st.sidebar.info('PRIVACY POLICY: Uploaded images are never saved or stored. They are held entirely within memory for prediction \
+                and discarded after the final results are displayed. ')
+            check = st.sidebar.checkbox("Add the playlist to my Spotify account")
+            f = st.sidebar.file_uploader("Please Select to Upload an Image", type=['png', 'jpg', 'jpeg', 'tiff', 'gif', 'JPG'])
+            if f is not None:
+                tfile = tempfile.NamedTemporaryFile(delete=True)
+                tfile.write(f.read())
+                st.sidebar.write('Please wait for the playlist to be created! This may take up to a few minutes.')
+                ids = run_app(tfile, token)
+                if check:
+                    st.empty()
+                    auth.create_playlist(token, ids)
+                    st.success("Playlist has been added to your Spotify account!")
             
 
 
