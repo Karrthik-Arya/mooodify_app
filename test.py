@@ -60,8 +60,8 @@ def predict_emotion(image):
   emotion = [0,0,0,0]
   emotion[0] = prediction[1]
   emotion[1] = prediction[2]
-  emotion[2] = prediction[4] + 0.5*prediction[1] + 0.25*prediction[2]
-  emotion[3] = 1.2*prediction[3] + 0.3*prediction[1] + 0.3*prediction[0]
+  emotion[2] = 0.8*prediction[4] + 0.4*prediction[1] + 0.15*prediction[2]
+  emotion[3] = 1.5*prediction[3] + 0.8*prediction[1] + 0.3*prediction[0]
   emotion = np.argmax(emotion)
   return emotion
 

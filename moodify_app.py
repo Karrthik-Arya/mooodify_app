@@ -33,10 +33,11 @@ SIDEBAR_OPTIONS = [SIDEBAR_OPTION_PROJECT_INFO, SIDEBAR_OPTION_DEMO_IMAGE, SIDEB
 #needs one arg as mood ,history should return csv format of history of songs including their stats ((csv format))
 def load_model(mood, token):
     df  = auth.make_df(token)
+    #df = pd.read_csv("moods.csv")
     final_play_lst=recommend(mood,df)
     ids = list(final_play_lst["ID"])
     final_play_lst = final_play_lst[["Name", "Artist", "Album"]]
-    #final_play_lst = final_play_lst.style.set_properties(**{'text-align': 'left'})
+    final_play_lst = final_play_lst.style.set_properties(**{'text-align': 'left'})
     st.write(final_play_lst)
     return ids
        
@@ -88,9 +89,11 @@ def run_app(img, token):
     xb = load_and_preprocess_img(img, num_hg_blocks=1)
     display_image = cv2.resize(xb, IMAGE_DISPLAY_SIZE,
                         interpolation=cv2.INTER_LINEAR)
-    mood_img=EC.emotion_detect(display_image)
     left_column.image(display_image, caption = "Selected Input")
-    right_column.image(display_image, caption = "Predicted mood:" + str(mood_img) )
+    new_img, mood_img=EC.emotion_detect(display_image)
+    new_img = cv2.resize(new_img, IMAGE_DISPLAY_SIZE,
+                        interpolation=cv2.INTER_LINEAR)
+    right_column.image(new_img, caption = "Predicted mood:" + str(mood_img) )
     ids = load_model(mood_img, token)
     return ids
      
@@ -103,8 +106,7 @@ def main():
     st.sidebar.title("Explore the Following")
 
     app_mode = st.sidebar.selectbox("Please select from the following", SIDEBAR_OPTIONS)
-    st.markdown("""<p>Before proceeding, please go to <a href='https://developer.spotify.com/console/get-recently-played/'>this</a> website, click on get token and click on 'user-recently-played' and 'playlist-modify-private' to generate token. Paste the obtained OAuth Token here </p>""", unsafe_allow_html=True)
-    token = st.text_input("Access token: ")
+    token = auth.get_token()
     if app_mode == SIDEBAR_OPTION_PROJECT_INFO:
         st.sidebar.write(" ------ ")
         st.sidebar.success("Project information showing on the right!")
@@ -124,7 +126,7 @@ def main():
     
 
     elif app_mode == SIDEBAR_OPTION_DEMO_IMAGE:
-        if not token:
+        if False:
             st.warning("Please enter access token")
         else:
             st.sidebar.write(" ------ ")
@@ -161,7 +163,7 @@ def main():
 
 
     elif app_mode == SIDEBAR_OPTION_UPLOAD_IMAGE:
-        if not token:
+        if False:
             st.warning("Please enter access token")
         else:
             #upload = st.empty()

@@ -5,30 +5,39 @@ import string
 import random
 import requests
 import datetime
-from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
+import base64
 import pandas as pd
+import pytz
 
 os.environ['SPOTIPY_CLIENT_ID']='f7a43754c96842d0abe4714b5d46b5b8'
 os.environ['SPOTIPY_CLIENT_SECRET']='b220dc8a84284d15960df4b2460255ee'
 os.environ['SPOTIPY_REDIRECT_URI']='http://127.0.0.1:8000/'
 
 def get_token():
-    username = ''.join(random.choices(string.ascii_uppercase +
-                                string.digits, k = 10))
-    #  if len(sys.argv) > 1:
-    #     username = sys.argv[1]
-    #  else:
-    #     print("Usage: %s username" % (sys.argv[0],))
-    #     sys.exit()
+    scope=['user-library-read','user-read-recently-played','playlist-modify-private','playlist-modify-public','playlist-read-private','playlist-read-collaborative','user-read-private']
+    client_id = "7642a65ef65a412c98d59a91d0acf35a"
+    client_secret = "db2c940d8cd9495592bb9f8e2d9237c9"
+    redirect_uri = "http://localhost:8888/callback/"
+    auth_obj = SpotifyOAuth(scope = scope, client_id = "7642a65ef65a412c98d59a91d0acf35a", client_secret = "db2c940d8cd9495592bb9f8e2d9237c9", redirect_uri = "http://localhost:8888/callback/")
+    auth_code = auth_obj.get_auth_response()
+    print(auth_code)
+    headers = {}
+    data = {}
 
-    scope = ['user-library-read','user-read-recently-played','playlist-modify-private','playlist-modify-public','playlist-read-private','playlist-read-collaborative','user-read-private']
+    # Encode as Base64
+    message = f"{client_id}:{client_secret}"
+    messageBytes = message.encode('ascii')
+    base64Bytes = base64.b64encode(messageBytes)
+    base64Message = base64Bytes.decode('ascii')
 
-    token = util.prompt_for_user_token(
-            username=username,
-            scope=scope,
-            client_id=os.getenv("SPOTIPY_CLIENT_ID"),
-            client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
-            redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI"))
+
+    headers['Authorization'] = f"Basic {base64Message}"
+    data['grant_type'] = "authorization_code"
+    data['code'] = auth_code
+    data["redirect_uri"] = redirect_uri
+    r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+    token = r.json()["access_token"]
     if token:
         return token
     else:
@@ -64,7 +73,8 @@ def fetch_ids(token):
 def create_playlist(token, ids):
     username = fetch_username(token)
     sp = spotipy.Spotify(auth=token)
-    time = datetime.datetime.now()
+    IST = pytz.timezone('Asia/Kolkata')
+    time = datetime.datetime.now(IST)
     playlist_name = f'Playlist by Moodify | {time.strftime(f"%m/%d/%Y, %H:%M:%S")}'   
     sp.user_playlist_create(username, name=playlist_name)
     print("Successfully created Playlist")
